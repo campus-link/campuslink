@@ -1,20 +1,16 @@
-require('dotenv').config(); // Load environment variables at the start
-
+require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const path = require('path'); // Add path for static files
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "../public")));
 
-// ✅ Serve static files
-app.use(express.static(path.join(__dirname, "../public"))); 
-
-// ✅ Database Connection
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -25,70 +21,77 @@ const db = mysql.createConnection({
 db.connect(err => {
     if (err) {
         console.error("❌ MySQL Connection Error:", err);
-        process.exit(1); // Stop server if DB connection fails
+        process.exit(1);
     }
     console.log('✅ MySQL Connected...');
 });
 
-// ✅ Admin Login API
+// ✅ Admin Login
 app.post('/admin/login', async (req, res) => {
     const { username, password } = req.body;
 
-    console.log("📥 Login Attempt:", { username });
-
     db.query('SELECT * FROM admins WHERE username = ?', [username], async (err, results) => {
-        if (err) {
-            console.error("❌ Database Error:", err);
-            return res.status(500).json({ message: "Server error" });
-        }
-
-        if (results.length === 0) {
-            console.log("⚠️ User not found:", username);
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
+        if (err) return res.status(500).json({ message: "Server error" });
+        if (results.length === 0) return res.status(401).json({ message: "Invalid credentials" });
 
         const admin = results[0];
-
-        console.log("🔑 Checking password for:", username);
-
         const isMatch = await bcrypt.compare(password, admin.password);
+        if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
-        if (!isMatch) {
-            console.log("❌ Password mismatch for:", username);
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
-
-        // ✅ Generate JWT Token
         const token = jwt.sign({ username: admin.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-        console.log("✅ Login successful for:", username);
-
         res.json({ token });
     });
 });
 
-// ✅ Token Verification API
+// ✅ Token Verification
 app.post("/admin/verify", (req, res) => {
     const token = req.headers.authorization?.split(" ")[1];
-
-    if (!token) {
-        console.log("⚠️ No token provided!");
-        return res.status(401).json({ message: "Unauthorized: No token provided" });
-    }
+    if (!token) return res.status(401).json({ message: "Unauthorized: No token provided" });
 
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            console.log("❌ Token verification failed:", err.message);
-            return res.status(403).json({ message: "Invalid token" });
-        }
-
-        console.log("✅ Token verified:", decoded);
+        if (err) return res.status(403).json({ message: "Invalid token" });
         res.json({ message: "Authorized", user: decoded.username });
     });
 });
 
-// ✅ Start Server
+// ✅ CRUD APIs for Users
+
+// CREATE User
+app.post('/users', (req, res) => {
+    const { name, email, role } = req.body;
+    db.query('INSERT INTO users (name, email, role) VALUES (?, ?, ?)', [name, email, role], (err, result) => {
+        if (err) return res.status(500).json({ message: "Error creating user" });
+        res.json({ id: result.insertId, name, email, role });
+    });
+});
+
+// READ All Users
+app.get('/users', (req, res) => {
+    db.query('SELECT * FROM users', (err, results) => {
+        if (err) return res.status(500).json({ message: "Error fetching users" });
+        res.json(results);
+    });
+});
+
+// UPDATE User
+app.put('/users/:id', (req, res) => {
+    const { id } = req.params;
+    const { name, email, role } = req.body;
+    db.query('UPDATE users SET name = ?, email = ?, role = ? WHERE id = ?', [name, email, role, id], (err) => {
+        if (err) return res.status(500).json({ message: "Error updating user" });
+        res.json({ id, name, email, role });
+    });
+});
+
+// DELETE User
+app.delete('/users/:id', (req, res) => {
+    const { id } = req.params;
+    db.query('DELETE FROM users WHERE id = ?', [id], (err) => {
+        if (err) return res.status(500).json({ message: "Error deleting user" });
+        res.json({ message: "User deleted", id });
+    });
+});
+
 app.listen(5000, () => {
     console.log('🚀 Server running on port 5000');
-    console.log("🔑 JWT Secret:", process.env.JWT_SECRET ? "Loaded ✅" : "❌ Not Found!");
 });
