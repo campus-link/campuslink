@@ -1,12 +1,19 @@
-const mysql = require('mysql2/promise');
-const con = await mysql.createConnection({ /* ... */ });
+const mysql = require('mysql2');
 
-
-const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'your_mysql_username',
-    password: 'your_mysql_password',
-    database: 'campuslink'
+const connection = mysql.createConnection({
+  host: 'bnfuvfykpblxvmxhzra3-mysql.services.clever-cloud.com',
+  user: 'ueqbbytylfviajmw',
+  password: 'F6EXr9bTBprzeTO8jG93', // paste actual password
+  database: 'bnfuvfykpblxvmxhzra3',
+  port: 3306
 });
 
-module.exports = pool.promise();
+connection.connect((err) => {
+  if (err) {
+    console.error('Database connection failed:', err.stack);
+    return;
+  }
+  console.log('Connected to MySQL database on Clever Cloud.');
+});
+
+module.exports = connection;
