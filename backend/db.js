@@ -1,4 +1,6 @@
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
+const con = await mysql.createConnection({ /* ... */ });
+
 
 const pool = mysql.createPool({
     host: 'localhost',
