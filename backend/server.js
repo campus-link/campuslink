@@ -9,7 +9,8 @@ const path = require('path');
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public"))); // simplified path
+app.use(express.static(path.join(__dirname, "../public")));
+ // simplified path
 
 // 📦 MySQL Connection (Persistent)
 let con;
