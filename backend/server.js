@@ -123,6 +123,22 @@ app.put('/users/:id', async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+// testing
+app.get("/db-test", async (req, res) => {
+  try {
+    const [rows] = await con.query("SELECT NOW() AS time");
+    res.json({ success: true, time: rows[0].time });
+  } catch (err) {
+    console.error("DB Test Error:", err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+//testing
+
+
+
+
 
 // 🗑️ DELETE User
 app.delete('/users/:id', async (req, res) => {
