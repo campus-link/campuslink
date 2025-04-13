@@ -35,29 +35,34 @@ connectDB();
 
 // 🔐 Admin Login
 app.post('/admin/login', async (req, res) => {
-  const { username, password } = req.body;
-
   try {
-    const [results] = await con.query('SELECT * FROM admins WHERE username = ?', [username]);
+    console.log("Login request body:", req.body); // DEBUG
 
+    const { username, password } = req.body;
+
+    const [results] = await con.query('SELECT * FROM admins WHERE username = ?', [username]);
     if (results.length === 0) {
+      console.log("❌ No user found");
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const admin = results[0];
-    const isMatch = await bcrypt.compare(password, admin.password);
+    console.log("Admin found:", admin); // DEBUG
 
-    if (!isMatch) {
+    // TEMP: disable bcrypt for testing
+    if (password !== admin.password) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ username: admin.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ username: admin.username }, process.env.JWT_SECRET || 'testsecret', { expiresIn: '1h' });
     res.json({ token });
+
   } catch (err) {
-    console.error("❌ Admin login error:", err.message);
-    res.status(500).json({ message: "Something went wrong!" });
+    console.error("❌ Login Error:", err.message);
+    res.status(500).json({ message: "Server error" });
   }
 });
+
 
 // 🛡️ Token Verification
 app.post('/admin/verify', (req, res) => {

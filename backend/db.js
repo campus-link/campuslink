@@ -4,7 +4,7 @@ const connection = mysql.createConnection({
   host: 'bnfuvfykpblxvmxhzra3-mysql.services.clever-cloud.com',
   user: 'ueqbbytylfviajmw',
   password: 'F6EXr9bTBprzeTO8jG93', // paste actual password
-  database: 'bnfuvfykpblxvmxhzra3',
+  database: 'campuslink', // Change this to the correct database name
   port: 3306
 });
 
